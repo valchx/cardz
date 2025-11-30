@@ -1,6 +1,6 @@
 # BlackJack
 
-![Preview](./docs/01.mp4) 
+![Preview](./docs/01.gif) 
 
 Create a game of black jack in zig using raylib.
 
