@@ -1,8 +1,101 @@
 const std = @import("std");
 const rl = @import("raylib");
 
+const Utils = @import("./utils.zig");
+
 const Self = @This();
 
+pub const Suite = enum {
+    spades,
+    hearts,
+    clubs,
+    diamonds,
+
+    pub fn isRed(self: Suite) bool {
+        return switch (self) {
+            Suite.hearts, Suite.diamonds => true,
+            else => false,
+        };
+    }
+
+    const symbol_index = blk: {
+        // TODO : Can get 13 from enum size ?
+        var strings: [4][]const u8 = undefined;
+        for (std.meta.fields(Suite), 0..) |suite_field, i| {
+            const suite: Suite = @enumFromInt(suite_field.value);
+            strings[i] = switch (suite) {
+                Suite.spades => "S",
+                Suite.hearts => "H",
+                Suite.clubs => "C",
+                Suite.diamonds => "D",
+            };
+        }
+        break :blk strings;
+    };
+
+    pub fn toStr(self: Suite) []const u8 {
+        return symbol_index[@intFromEnum(self)];
+    }
+};
+
+pub const Rank = enum {
+    n2,
+    n3,
+    n4,
+    n5,
+    n6,
+    n7,
+    n8,
+    n9,
+    n10,
+    jack,
+    queen,
+    king,
+    ace,
+
+    pub fn isFace(self: Rank) bool {
+        return switch (self) {
+            Rank.jack...Rank.king => true,
+            _ => false,
+        };
+    }
+
+    pub fn blackJackValue(self: Rank) i32 {
+        return switch (self) {
+            Rank.n2...Rank.n9 => self + 2,
+            Rank.n10...Rank.king => 10,
+            // TODO : handle soft hands. Maybe return two options.
+            Rank.ace => 11,
+        };
+    }
+
+    const symbol_index = blk: {
+        // TODO : Can get 13 from enum size ?
+        var strings: [13][]const u8 = undefined;
+        for (std.meta.fields(Rank), 0..) |rank_field, i| {
+            const rank: Rank = @enumFromInt(rank_field.value);
+            strings[i] = switch (rank) {
+                else => std.fmt.comptimePrint("{}", .{@intFromEnum(rank)}),
+                Rank.jack => "J",
+                Rank.queen => "Q",
+                Rank.king => "K",
+                Rank.ace => "A",
+            };
+        }
+        break :blk strings;
+    };
+
+    pub fn toStr(self: Rank) []const u8 {
+        return symbol_index[@intFromEnum(self)];
+    }
+};
+
+pub const Id = struct {
+    suite: Suite,
+    rank: Rank,
+};
+
+id: Id,
 render_texture: rl.RenderTexture2D,
 position: rl.Vector2,
 size: rl.Vector2,
@@ -13,21 +106,25 @@ sway_target: f32 = 0,
 is_dragging: bool = false,
 debug: bool = false,
 
-pub fn init(screen_size: rl.Vector2) rl.RaylibError!Self {
-    const height = 200;
+pub fn init(id: Id) !Self {
+    const height = 100;
     const width = height_to_width_f32(height);
-    const center = screen_size.divide(rl.Vector2.init(2, 2));
+    const center = rl.Vector2.init(
+        @floatFromInt(rl.getScreenWidth()),
+        @floatFromInt(rl.getScreenHeight()),
+    ).divide(rl.Vector2.init(2, 2));
 
     const texture_height: i32 = 200;
     const rt = try rl.loadRenderTexture(height_to_width_i32(texture_height), texture_height);
 
     const self = Self{
+        .id = id,
         .position = center,
         .size = rl.Vector2.init(height, width),
         .render_texture = rt,
     };
 
-    self.update_texture();
+    try self.update_texture();
 
     return self;
 }
@@ -36,7 +133,7 @@ pub fn deinit(self: Self) void {
     rl.unloadRenderTexture(self.render_texture);
 }
 
-fn update_texture(self: Self) void {
+fn update_texture(self: Self) !void {
     const tex = self.render_texture;
 
     rl.beginTextureMode(tex);
@@ -57,6 +154,35 @@ fn update_texture(self: Self) void {
         0,
         .white,
     );
+
+    const color: rl.Color = if (self.id.suite.isRed()) .red else .black;
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const alloc = gpa.allocator();
+
+    var rank_c_str = try Utils.cStrFromSlice(self.id.rank.toStr(), alloc);
+    defer rank_c_str.deinit();
+
+    rl.drawText(
+        rank_c_str.data,
+        @divFloor(tex.texture.width, 2),
+        @divFloor(tex.texture.height, 2),
+        100,
+        color,
+    );
+
+    var suite_c_str = try Utils.cStrFromSlice(self.id.suite.toStr(), alloc);
+    defer suite_c_str.deinit();
+
+    rl.drawText(
+        suite_c_str.data,
+        // TODO : Figure out how to fit it nicely
+        @divFloor(tex.texture.width, 2) + 60,
+        @divFloor(tex.texture.height, 2),
+        100,
+        color,
+    );
 }
 
 pub fn draw(self: Self) void {
@@ -66,7 +192,7 @@ pub fn draw(self: Self) void {
             0,
             0,
             @floatFromInt(self.render_texture.texture.width),
-            @floatFromInt(self.render_texture.texture.height),
+            @floatFromInt(-self.render_texture.texture.height),
         ),
         .init(self.position.x, self.position.y, self.size.x, self.size.y),
         self.size.divide(.init(2, 2)),

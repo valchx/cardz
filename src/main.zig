@@ -1,6 +1,8 @@
 const std = @import("std");
 const rl = @import("raylib");
 
+const Game = @import("game.zig");
+const Hand = @import("hand.zig");
 const Card = @import("card.zig");
 
 pub fn main() anyerror!void {
@@ -11,16 +13,17 @@ pub fn main() anyerror!void {
 
     rl.setTargetFPS(1000);
 
-    var card = try Card.init(screen_size);
-    defer card.deinit();
+    var game = try Game.init();
 
-    card.debug = true;
+    const card = game.deck.items[0];
+    // card.debug = true;
+    try game.player_hand.add_card(card);
 
     std.debug.print("card: {}\n", .{card});
 
     while (!rl.windowShouldClose()) {
         // Update
-        card.update();
+        game.player_hand.update();
 
         // Draw
         rl.beginDrawing();
@@ -28,6 +31,6 @@ pub fn main() anyerror!void {
 
         rl.clearBackground(.dark_green);
 
-        card.draw();
+        game.player_hand.draw();
     }
 }
