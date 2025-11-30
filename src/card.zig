@@ -3,11 +3,14 @@ const rl = @import("raylib");
 
 const Self = @This();
 
+render_texture: rl.RenderTexture2D,
 position: rl.Vector2,
 size: rl.Vector2,
+base_rotation: f32 = 0,
 rotation: f32 = 0,
-render_texture: rl.RenderTexture2D,
-dragging_coords: ?rl.Vector2 = null, // Grab coordinate
+sway_rotation: f32 = 0,
+sway_target: f32 = 0,
+is_dragging: bool = false,
 debug: bool = false,
 
 pub fn init(screen_size: rl.Vector2) rl.RaylibError!Self {
@@ -100,14 +103,39 @@ pub fn draw(self: Self) void {
     }
 }
 
+fn lerp(a: f32, b: f32, t: f32) f32 {
+    return a + (b - a) * t;
+}
+
 pub fn update(self: *Self) void {
     const mouse_pos = rl.getMousePosition();
+    const mouse_delta = rl.getMouseDelta();
+    const delta_time = rl.getFrameTime();
 
-    if (self.dragging_coords) |_| {
-        const mouse_delta = rl.getMouseDelta();
-
+    if (self.is_dragging) {
         self.position = self.position.add(mouse_delta);
+
+        const velocity = mouse_delta.x * 12.0;
+        const normalized_sway = velocity * 1.8;
+
+        const sway_max_abs = 25.0;
+        const target_sway = @max(-sway_max_abs, @min(sway_max_abs, normalized_sway));
+
+        self.sway_target = target_sway;
+        self.sway_rotation = std.math.lerp(
+            self.sway_rotation,
+            self.sway_target,
+            20.0 * delta_time,
+        );
+    } else if (self.sway_rotation != 0) {
+        self.sway_target = 0;
+        self.sway_rotation = std.math.lerp(
+            self.sway_rotation,
+            self.sway_target,
+            12.0 * delta_time,
+        );
     }
+    self.rotation = self.base_rotation + self.sway_rotation;
 
     const two_triangles = self.get_two_triangles();
     const triangle_1 = two_triangles.triangle_1;
@@ -129,11 +157,11 @@ pub fn update(self: *Self) void {
     const mouse_over_card = triangle_1_col or triangle_2_col;
 
     if (rl.isMouseButtonPressed(.left) and mouse_over_card) {
-        self.dragging_coords = rl.getMousePosition();
+        self.is_dragging = true;
     }
 
     if (rl.isMouseButtonReleased(.left)) {
-        self.dragging_coords = null;
+        self.is_dragging = false;
     }
 }
 
@@ -163,10 +191,7 @@ fn get_two_triangles(self: Self) struct { triangle_1: [3]rl.Vector2, triangle_2:
     br = br.add(self.position);
     bl = bl.add(self.position);
 
-    return .{ 
-        .triangle_1 = .{ tl, tr, br }, 
-        .triangle_2 = .{ br, bl, tl } 
-    };
+    return .{ .triangle_1 = .{ tl, tr, br }, .triangle_2 = .{ br, bl, tl } };
 }
 
 fn height_to_width_f32(height: f32) f32 {
