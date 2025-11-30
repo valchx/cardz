@@ -79,20 +79,54 @@ pub fn draw(self: Self) void {
             5,
             .black,
         );
+
+        // Collision triangles
+        const two_triangles = self.get_two_triangles();
+        const triangle_1 = two_triangles.triangle_1;
+        const triangle_2 = two_triangles.triangle_2;
+
+        rl.drawTriangleLines(
+            triangle_1[0],
+            triangle_1[1],
+            triangle_1[2],
+            .red,
+        );
+        rl.drawTriangleLines(
+            triangle_2[0],
+            triangle_2[1],
+            triangle_2[2],
+            .red,
+        );
     }
 }
 
 pub fn update(self: *Self) void {
+    const mouse_pos = rl.getMousePosition();
+
     if (self.dragging_coords) |_| {
         const mouse_delta = rl.getMouseDelta();
 
         self.position = self.position.add(mouse_delta);
     }
 
-    // TODO : Colision on rotated rects
-    const origin_point = self.position.subtract(self.size.divide(.init(2, 2)));
-    const bounds: rl.Rectangle = .init(origin_point.x, origin_point.y, self.size.x, self.size.y);
-    const mouse_over_card = rl.checkCollisionPointRec(rl.getMousePosition(), bounds);
+    const two_triangles = self.get_two_triangles();
+    const triangle_1 = two_triangles.triangle_1;
+    const triangle_2 = two_triangles.triangle_2;
+
+    const triangle_1_col = rl.checkCollisionPointTriangle(
+        mouse_pos,
+        triangle_1[0],
+        triangle_1[1],
+        triangle_1[2],
+    );
+    const triangle_2_col = rl.checkCollisionPointTriangle(
+        mouse_pos,
+        triangle_2[0],
+        triangle_2[1],
+        triangle_2[2],
+    );
+
+    const mouse_over_card = triangle_1_col or triangle_2_col;
 
     if (rl.isMouseButtonPressed(.left) and mouse_over_card) {
         self.dragging_coords = rl.getMousePosition();
@@ -101,6 +135,38 @@ pub fn update(self: *Self) void {
     if (rl.isMouseButtonReleased(.left)) {
         self.dragging_coords = null;
     }
+}
+
+fn get_two_triangles(self: Self) struct { triangle_1: [3]rl.Vector2, triangle_2: [3]rl.Vector2 } {
+    // 1. Move corners TO ORIGIN (subtract center)
+    var tl = self.position.subtract(self.size.divide(.{ .x = 2, .y = 2 }));
+    var tr = tl.add(.{ .x = self.size.x, .y = 0 });
+    var br = tl.add(.{ .x = self.size.x, .y = self.size.y });
+    var bl = tl.add(.{ .x = 0, .y = self.size.y });
+
+    // 2. Translate TO ORIGIN for rotation
+    tl = tl.subtract(self.position);
+    tr = tr.subtract(self.position);
+    br = br.subtract(self.position);
+    bl = bl.subtract(self.position);
+
+    // 3. Rotate around origin (0,0)
+    const mat = rl.Matrix.rotateZ(std.math.degreesToRadians(self.rotation));
+    tl = tl.transform(mat);
+    tr = tr.transform(mat);
+    br = br.transform(mat);
+    bl = bl.transform(mat);
+
+    // 4. Translate BACK to world position
+    tl = tl.add(self.position);
+    tr = tr.add(self.position);
+    br = br.add(self.position);
+    bl = bl.add(self.position);
+
+    return .{ 
+        .triangle_1 = .{ tl, tr, br }, 
+        .triangle_2 = .{ br, bl, tl } 
+    };
 }
 
 fn height_to_width_f32(height: f32) f32 {
