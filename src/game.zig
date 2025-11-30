@@ -48,8 +48,8 @@ fn reset(self: *Self) !void {
         }
     }
 
-    const seed = 1234;
-    var prng = std.Random.DefaultPrng.init(seed);
+    const seed = std.time.milliTimestamp();
+    var prng = std.Random.DefaultPrng.init(@intCast(seed));
     const random = prng.random();
 
     std.Random.shuffle(random, Card, self.deck.items);
