@@ -8,21 +8,20 @@ const Self = @This();
 
 rect: rl.Rectangle,
 drop_slots: std.ArrayList(DropSlot),
-_drop_slots_alloc: std.mem.Allocator,
+_drop_slots_alloc: std.heap.ArenaAllocator,
 
 pub fn init(dimentions: rl.Vector2) !Self {
-    var deck_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    const drop_slots_alloc = deck_arena.allocator();
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 
     return .{
         .rect = .init(0, 0, dimentions.x, dimentions.y),
-        .drop_slots = try .initCapacity(drop_slots_alloc, 0),
-        ._drop_slots_alloc = drop_slots_alloc,
+        .drop_slots = try .initCapacity(arena.allocator(), 0),
+        ._drop_slots_alloc = arena,
     };
 }
 
 pub fn deinit(self: *Self) void {
-    self.drop_slots.clearAndFree(self._drop_slots_alloc);
+    self._drop_slots_alloc.deinit();
 }
 
 pub fn draw(self: Self, ctx: *const Context) void {

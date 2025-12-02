@@ -79,7 +79,7 @@ fn update_texture(self: Self) !void {
 
     rl.drawText(
         rank_c_str.data,
-        @divFloor(tex.texture.width, 2),
+        @divFloor(tex.texture.width, 2) - 10,
         @divFloor(tex.texture.height, 2),
         100,
         color,
@@ -320,12 +320,12 @@ pub const Rank = enum {
         };
     }
 
-    pub fn blackJackValue(self: Rank) i32 {
+    pub fn blackJackValue(self: Rank) []const i32 {
         return switch (self) {
-            Rank.n2...Rank.n9 => self + 2,
-            Rank.n10...Rank.king => 10,
+            Rank.n2...Rank.n9 => .{self + 2},
+            Rank.n10...Rank.king => .{10},
             // TODO : handle soft hands. Maybe return two options.
-            Rank.ace => 11,
+            Rank.ace => .{ 1, 11 },
         };
     }
 
