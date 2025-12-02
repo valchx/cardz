@@ -1,9 +1,9 @@
 const std = @import("std");
 const rl = @import("raylib");
 
-const Game = @import("game.zig");
-const Hand = @import("hand.zig");
-const Card = @import("card.zig");
+const Game = @import("Game.zig");
+const Hand = @import("Hand.zig");
+const Card = @import("Card.zig");
 
 pub fn main() anyerror!void {
     const screen_size = rl.Vector2.init(800, 450);

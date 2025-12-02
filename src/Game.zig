@@ -1,7 +1,7 @@
 const std = @import("std");
 
-const Hand = @import("hand.zig");
-const Card = @import("card.zig");
+const Hand = @import("Hand.zig");
+const Card = @import("Card.zig");
 
 const Self = @This();
 

@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const Card = @import("./card.zig");
+const Card = @import("./Card.zig");
 
 const Self = @This();
 
