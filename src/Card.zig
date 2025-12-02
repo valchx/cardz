@@ -44,7 +44,7 @@ pub fn deinit(self: Self) void {
     rl.unloadRenderTexture(self.render_texture);
 }
 
-const CARD_CORNER_ROUNDEDNESS = 0.2;
+pub const CARD_CORNER_ROUNDEDNESS = 0.2;
 
 fn update_texture(self: Self) !void {
     const tex = self.render_texture;
@@ -102,6 +102,7 @@ pub fn draw(self: Self) void {
     var pos = self.position;
 
     if (self.is_dragging) {
+        // TODO : Use existing or new texture to get rotation.
         rl.drawRectangleRounded(
             .init(
                 pos.x - self.size.x / 2,

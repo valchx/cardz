@@ -1,10 +1,14 @@
 const std = @import("std");
+const rl = @import("raylib");
 
+const Context = @import("Context.zig");
 const Hand = @import("Hand.zig");
 const Card = @import("Card.zig");
+const Board = @import("Board.zig");
 
 const Self = @This();
 
+board: Board,
 player_hand: Hand,
 dealer_hand: Hand,
 deck: std.ArrayList(Card),
@@ -19,6 +23,12 @@ pub fn init() !Self {
     );
 
     var self = Self{
+        .board = .init(
+            rl.Vector2.init(
+                @floatFromInt(rl.getScreenWidth()),
+                @floatFromInt(rl.getScreenHeight()),
+            ),
+        ),
         .player_hand = try Hand.init(),
         .dealer_hand = try Hand.init(),
         .deck = deck,
@@ -63,4 +73,16 @@ pub fn deinit(self: *Self) void {
 
     self.dealer_hand.deinit();
     self.player_hand.deinit();
+}
+
+pub fn draw(self: Self, ctx: *const Context) void {
+    self.board.draw(ctx);
+
+    self.player_hand.draw();
+    self.dealer_hand.draw();
+}
+
+pub fn update(self: Self) void {
+    self.player_hand.update();
+    self.dealer_hand.update();
 }

@@ -1,6 +1,7 @@
 const std = @import("std");
 const rl = @import("raylib");
 
+const Context = @import("Context.zig");
 const Game = @import("Game.zig");
 const Hand = @import("Hand.zig");
 const Card = @import("Card.zig");
@@ -19,18 +20,27 @@ pub fn main() anyerror!void {
     // card.debug = true;
     try game.player_hand.add_card(card);
 
-    std.debug.print("card: {}\n", .{card});
+    var ctx: Context = .{
+        .world_to_screen_scale = 1,
+        .screen_size = .init(
+            0,
+            0,
+        ),
+    };
 
     while (!rl.windowShouldClose()) {
+        ctx.screen_size = .init(
+            @floatFromInt(rl.getScreenWidth()),
+            @floatFromInt(rl.getScreenHeight()),
+        );
+
         // Update
-        game.player_hand.update();
+        game.update();
 
         // Draw
         rl.beginDrawing();
         defer rl.endDrawing();
 
-        rl.clearBackground(.dark_green);
-
-        game.player_hand.draw();
+        game.draw(&ctx);
     }
 }
