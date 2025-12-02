@@ -47,7 +47,10 @@ fn reset(self: *Self) !void {
     for (self.deck.items) |*card| {
         card.deinit();
     }
-    self.deck.clearRetainingCapacity();
+
+    _ = self._deck_alloc.reset(.free_all);
+
+    self.deck = try .initCapacity(self._deck_alloc.allocator(), 0);
 
     inline for (std.meta.fields(Card.Rank)) |rank_field| {
         inline for (std.meta.fields(Card.Suite)) |suite_field| {
