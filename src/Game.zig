@@ -15,9 +15,6 @@ deck: std.ArrayList(Card),
 _deck_alloc: std.heap.ArenaAllocator,
 
 pub fn init() !Self {
-    // TODO : This must leak. Right ? The free with the arena allocator is a no-op.
-    // I think we need to keep the arena around. But it's created on the stack.
-    // Not sure what to do. I don't want to have to initialize it higher than this.
     var deck_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 
     const deck = try std.ArrayList(Card).initCapacity(
