@@ -5,8 +5,10 @@ const Utils = @import("./utils.zig");
 
 const Self = @This();
 
+pub const DEFAULT_CARD_HEIGHT: f32 = 100;
+
 id: Id,
-render_texture: rl.RenderTexture2D,
+render_texture: ?rl.RenderTexture2D = null,
 position: rl.Vector2,
 // TODO : Decorelate Card size from screen size.
 size: rl.Vector2,
@@ -18,21 +20,17 @@ is_dragging: bool = false,
 debug: bool = false,
 
 pub fn init(id: Id) !Self {
-    const height = 100;
+    const height = DEFAULT_CARD_HEIGHT;
     const width = height_to_width_f32(height);
     const center = rl.Vector2.init(
         @floatFromInt(rl.getScreenWidth()),
         @floatFromInt(rl.getScreenHeight()),
     ).divide(rl.Vector2.init(2, 2));
 
-    const texture_height: i32 = 200;
-    const rt = try rl.loadRenderTexture(height_to_width_i32(texture_height), texture_height);
-
-    const self = Self{
+    var self = Self{
         .id = id,
         .position = center,
         .size = rl.Vector2.init(height, width),
-        .render_texture = rt,
     };
 
     try self.update_texture();
@@ -41,128 +39,139 @@ pub fn init(id: Id) !Self {
 }
 
 pub fn deinit(self: Self) void {
-    rl.unloadRenderTexture(self.render_texture);
+    if (self.render_texture) |render_texture| {
+        rl.unloadRenderTexture(render_texture);
+    }
 }
 
+const TEXTURE_HEIGHT: i32 = 200;
 pub const CARD_CORNER_ROUNDEDNESS = 0.2;
 
-fn update_texture(self: Self) !void {
-    const tex = self.render_texture;
+fn update_texture(self: *Self) !void {
+    if (self.render_texture) |render_texture| {
+        rl.unloadRenderTexture(render_texture);
+    }
+    self.render_texture = try rl.loadRenderTexture(height_to_width_i32(TEXTURE_HEIGHT), TEXTURE_HEIGHT);
 
-    rl.beginTextureMode(tex);
-    defer rl.endTextureMode();
+    if (self.render_texture) |tex| {
+        rl.beginTextureMode(tex);
+        defer rl.endTextureMode();
 
-    var background = rl.Color.white;
-    background.a = 0;
-    rl.clearBackground(background);
+        var background = rl.Color.white;
+        background.a = 0;
+        rl.clearBackground(background);
 
-    rl.drawRectangleRounded(
-        .init(
-            0,
-            0,
-            @floatFromInt(tex.texture.width),
-            @floatFromInt(tex.texture.height),
-        ),
-        CARD_CORNER_ROUNDEDNESS,
-        0,
-        .white,
-    );
-
-    const color: rl.Color = if (self.id.suite.isRed()) .red else .black;
-
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const alloc = gpa.allocator();
-
-    var rank_c_str = try Utils.cStrFromSlice(self.id.rank.toStr(), alloc);
-    defer rank_c_str.deinit();
-
-    rl.drawText(
-        rank_c_str.data,
-        @divFloor(tex.texture.width, 2) - 10,
-        @divFloor(tex.texture.height, 2),
-        100,
-        color,
-    );
-
-    var suite_c_str = try Utils.cStrFromSlice(self.id.suite.toStr(), alloc);
-    defer suite_c_str.deinit();
-
-    rl.drawText(
-        suite_c_str.data,
-        // TODO : Figure out how to fit it nicely
-        @divFloor(tex.texture.width, 2) + 60,
-        @divFloor(tex.texture.height, 2),
-        100,
-        color,
-    );
-}
-
-pub fn draw(self: Self) void {
-    var pos = self.position;
-
-    if (self.is_dragging) {
-        // TODO : Use existing or new texture to get rotation.
         rl.drawRectangleRounded(
             .init(
-                pos.x - self.size.x / 2,
-                pos.y - self.size.y / 2,
-                self.size.x,
-                self.size.y,
+                0,
+                0,
+                @floatFromInt(tex.texture.width),
+                @floatFromInt(tex.texture.height),
             ),
             CARD_CORNER_ROUNDEDNESS,
             0,
-            .init(0, 0, 0, 50),
+            .white,
         );
 
-        pos = pos.subtract(.init(10, 10));
+        // TODO : Maybe use some custom textures ?
+        const color: rl.Color = if (self.id.suite.isRed()) .red else .black;
+
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        defer _ = gpa.deinit();
+        const alloc = gpa.allocator();
+
+        var rank_c_str = try Utils.cStrFromSlice(self.id.rank.toStr(), alloc);
+        defer rank_c_str.deinit();
+
+        rl.drawText(
+            rank_c_str.data,
+            @divFloor(tex.texture.width, 2) - 10,
+            @divFloor(tex.texture.height, 2),
+            100,
+            color,
+        );
+
+        var suite_c_str = try Utils.cStrFromSlice(self.id.suite.toStr(), alloc);
+        defer suite_c_str.deinit();
+
+        rl.drawText(
+            suite_c_str.data,
+            // TODO : Figure out how to fit it nicely
+            @divFloor(tex.texture.width, 2) + 60,
+            @divFloor(tex.texture.height, 2),
+            100,
+            color,
+        );
     }
+}
 
-    rl.drawTexturePro(
-        self.render_texture.texture,
-        .init(
-            0,
-            0,
-            @floatFromInt(self.render_texture.texture.width),
-            @floatFromInt(-self.render_texture.texture.height),
-        ),
-        .init(
-            pos.x,
-            pos.y,
-            self.size.x,
-            self.size.y,
-        ),
-        self.size.divide(.init(2, 2)),
-        self.rotation,
-        .white,
-    );
+pub fn draw(self: Self) void {
+    if (self.render_texture) |tex| {
+        var pos = self.position;
 
-    if (self.debug) {
-        // Center of card
-        rl.drawCircle(
-            @intFromFloat(self.position.x),
-            @intFromFloat(self.position.y),
-            5,
-            .black,
+        if (self.is_dragging) {
+            // TODO : Use existing or new texture to get rotation.
+            rl.drawRectangleRounded(
+                .init(
+                    pos.x - self.size.x / 2,
+                    pos.y - self.size.y / 2,
+                    self.size.x,
+                    self.size.y,
+                ),
+                CARD_CORNER_ROUNDEDNESS,
+                0,
+                .init(0, 0, 0, 50),
+            );
+
+            pos = pos.subtract(.init(10, 10));
+        }
+
+        rl.drawTexturePro(
+            tex.texture,
+            .init(
+                0,
+                0,
+                @floatFromInt(tex.texture.width),
+                @floatFromInt(-tex.texture.height),
+            ),
+            .init(
+                pos.x,
+                pos.y,
+                self.size.x,
+                self.size.y,
+            ),
+            self.size.divide(.init(2, 2)),
+            self.rotation,
+            .white,
         );
 
-        // Collision triangles
-        const two_triangles = self.get_two_triangles();
-        const triangle_1 = two_triangles.triangle_1;
-        const triangle_2 = two_triangles.triangle_2;
+        if (self.debug) {
+            // Center of card
+            rl.drawCircle(
+                @intFromFloat(self.position.x),
+                @intFromFloat(self.position.y),
+                5,
+                .black,
+            );
 
-        rl.drawTriangleLines(
-            triangle_1[0],
-            triangle_1[1],
-            triangle_1[2],
-            .red,
-        );
-        rl.drawTriangleLines(
-            triangle_2[0],
-            triangle_2[1],
-            triangle_2[2],
-            .red,
-        );
+            // Collision triangles
+            const two_triangles = self.get_two_triangles();
+            const triangle_1 = two_triangles.triangle_1;
+            const triangle_2 = two_triangles.triangle_2;
+
+            rl.drawTriangleLines(
+                triangle_1[0],
+                triangle_1[1],
+                triangle_1[2],
+                .red,
+            );
+            rl.drawTriangleLines(
+                triangle_2[0],
+                triangle_2[1],
+                triangle_2[2],
+                .red,
+            );
+        }
     }
 }
 
@@ -257,7 +266,7 @@ fn get_two_triangles(self: Self) struct { triangle_1: [3]rl.Vector2, triangle_2:
     return .{ .triangle_1 = .{ tl, tr, br }, .triangle_2 = .{ br, bl, tl } };
 }
 
-fn height_to_width_f32(height: f32) f32 {
+pub fn height_to_width_f32(height: f32) f32 {
     return height * 7 / 5;
 }
 

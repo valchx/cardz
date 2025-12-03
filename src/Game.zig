@@ -37,6 +37,8 @@ pub fn init() !Self {
 
     try self.reset();
 
+    try self.board.addDropZone(.init(200, 200));
+
     return self;
 }
 
@@ -53,10 +55,12 @@ fn reset(self: *Self) !void {
         inline for (std.meta.fields(Card.Suite)) |suite_field| {
             try self.deck.append(
                 self._deck_alloc.allocator(),
-                try Card.init(.{
-                    .rank = @enumFromInt(rank_field.value),
-                    .suite = @enumFromInt(suite_field.value),
-                }),
+                try Card.init(
+                    .{
+                        .rank = @enumFromInt(rank_field.value),
+                        .suite = @enumFromInt(suite_field.value),
+                    },
+                ),
             );
         }
     }

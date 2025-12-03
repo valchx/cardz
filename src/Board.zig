@@ -3,6 +3,7 @@ const rl = @import("raylib");
 
 const DropSlot = @import("DropSlot.zig");
 const Context = @import("Context.zig");
+const Card = @import("Card.zig");
 
 const Self = @This();
 
@@ -46,5 +47,23 @@ pub fn draw(self: Self, ctx: *const Context) void {
         @intFromFloat(dimentions.x),
         @intFromFloat(dimentions.y),
         .dark_green,
+    );
+
+    for (self.drop_slots.items) |drop_slot| {
+        drop_slot.draw();
+    }
+}
+
+pub fn addDropZone(self: *Self, position: rl.Vector2) !void {
+    try self.drop_slots.append(
+        self._drop_slots_alloc.allocator(),
+        .init(
+            .init(
+                position.x,
+                position.y,
+                Card.height_to_width_f32(Card.DEFAULT_CARD_HEIGHT),
+                Card.DEFAULT_CARD_HEIGHT,
+            ),
+        ),
     );
 }
