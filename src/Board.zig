@@ -1,14 +1,14 @@
 const std = @import("std");
 const rl = @import("raylib");
 
-const DropSlot = @import("DropSlot.zig");
+const DropZone = @import("DropZone.zig");
 const Context = @import("Context.zig");
 const Card = @import("Card.zig");
 
 const Self = @This();
 
 rect: rl.Rectangle,
-drop_slots: std.ArrayList(DropSlot),
+drop_slots: std.ArrayList(DropZone),
 _drop_slots_alloc: std.heap.ArenaAllocator,
 
 pub fn init(dimentions: rl.Vector2) !Self {
@@ -29,17 +29,12 @@ pub fn draw(self: Self, ctx: *const Context) void {
     const origin = rl.Vector2.init(
         self.rect.x,
         self.rect.y,
-    ).multiply(.init(
-        ctx.world_to_screen_scale,
-        ctx.world_to_screen_scale,
-    ));
+    ).scale(ctx.world_to_screen_scale);
+
     const dimentions = rl.Vector2.init(
         self.rect.width,
         self.rect.height,
-    ).multiply(.init(
-        ctx.world_to_screen_scale,
-        ctx.world_to_screen_scale,
-    ));
+    ).scale(ctx.world_to_screen_scale);
 
     rl.drawRectangle(
         @intFromFloat(origin.x),

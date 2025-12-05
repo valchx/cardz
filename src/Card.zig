@@ -17,7 +17,6 @@ rotation: f32 = 0,
 sway_rotation: f32 = 0,
 sway_target: f32 = 0,
 is_dragging: bool = false,
-debug: bool = false,
 
 pub fn init(id: Id) !Self {
     const height = DEFAULT_CARD_HEIGHT;
@@ -25,12 +24,12 @@ pub fn init(id: Id) !Self {
     const center = rl.Vector2.init(
         @floatFromInt(rl.getScreenWidth()),
         @floatFromInt(rl.getScreenHeight()),
-    ).divide(rl.Vector2.init(2, 2));
+    ).scale(0.5);
 
     var self = Self{
         .id = id,
         .position = center,
-        .size = rl.Vector2.init(height, width),
+        .size = rl.Vector2.init(width, height),
     };
 
     try self.update_texture();
@@ -54,6 +53,9 @@ fn update_texture(self: *Self) !void {
     self.render_texture = try rl.loadRenderTexture(height_to_width_i32(TEXTURE_HEIGHT), TEXTURE_HEIGHT);
 
     if (self.render_texture) |tex| {
+        const tex_width = tex.texture.width;
+        const tex_height = tex.texture.height;
+
         rl.beginTextureMode(tex);
         defer rl.endTextureMode();
 
@@ -65,8 +67,8 @@ fn update_texture(self: *Self) !void {
             .init(
                 0,
                 0,
-                @floatFromInt(tex.texture.width),
-                @floatFromInt(tex.texture.height),
+                @floatFromInt(tex_width),
+                @floatFromInt(tex_height),
             ),
             CARD_CORNER_ROUNDEDNESS,
             0,
@@ -83,11 +85,13 @@ fn update_texture(self: *Self) !void {
         var rank_c_str = try Utils.cStrFromSlice(self.id.rank.toStr(), alloc);
         defer rank_c_str.deinit();
 
+        const font_size = 60;
+
         rl.drawText(
             rank_c_str.data,
-            @divFloor(tex.texture.width, 2) - 10,
-            @divFloor(tex.texture.height, 2),
-            100,
+            @divFloor(tex_width, 2) - 10,
+            tex_height - font_size,
+            font_size,
             color,
         );
 
@@ -97,9 +101,9 @@ fn update_texture(self: *Self) !void {
         rl.drawText(
             suite_c_str.data,
             // TODO : Figure out how to fit it nicely
-            @divFloor(tex.texture.width, 2) + 60,
-            @divFloor(tex.texture.height, 2),
-            100,
+            @divFloor(tex_width, 2) + 30,
+            tex_height - font_size,
+            font_size,
             color,
         );
     }
@@ -145,7 +149,9 @@ pub fn draw(self: Self) void {
             .white,
         );
 
-        if (self.debug) {
+        // TODO : add some kind of build flag.
+        // Debug
+        if (true) {
             // Center of card
             rl.drawCircle(
                 @intFromFloat(self.position.x),
@@ -267,11 +273,11 @@ fn get_two_triangles(self: Self) struct { triangle_1: [3]rl.Vector2, triangle_2:
 }
 
 pub fn height_to_width_f32(height: f32) f32 {
-    return height * 7 / 5;
+    return (height * 5) / 7;
 }
 
 fn height_to_width_i32(height: i32) i32 {
-    return @divFloor(height * 7, 5);
+    return @divFloor(height * 5, 7);
 }
 
 pub const Suite = enum {
