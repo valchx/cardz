@@ -91,6 +91,6 @@ pub fn draw(self: Self, ctx: *const Context) void {
 }
 
 pub fn update(self: *Self) void {
-    self.player_hand.update();
-    self.dealer_hand.update();
+    self.player_hand.update(self.board.drop_zones.items);
+    self.dealer_hand.update(self.board.drop_zones.items);
 }

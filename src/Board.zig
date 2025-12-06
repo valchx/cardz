@@ -7,33 +7,33 @@ const Card = @import("Card.zig");
 
 const Self = @This();
 
-rect: rl.Rectangle,
-drop_slots: std.ArrayList(DropZone),
-_drop_slots_alloc: std.heap.ArenaAllocator,
+bounds: rl.Rectangle,
+drop_zones: std.ArrayList(DropZone),
+_drop_zones_alloc: std.heap.ArenaAllocator,
 
 pub fn init(dimentions: rl.Vector2) !Self {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 
     return .{
-        .rect = .init(0, 0, dimentions.x, dimentions.y),
-        .drop_slots = try .initCapacity(arena.allocator(), 0),
-        ._drop_slots_alloc = arena,
+        .bounds = .init(0, 0, dimentions.x, dimentions.y),
+        .drop_zones = try .initCapacity(arena.allocator(), 0),
+        ._drop_zones_alloc = arena,
     };
 }
 
 pub fn deinit(self: *Self) void {
-    self._drop_slots_alloc.deinit();
+    self._drop_zones_alloc.deinit();
 }
 
 pub fn draw(self: Self, ctx: *const Context) void {
     const origin = rl.Vector2.init(
-        self.rect.x,
-        self.rect.y,
+        self.bounds.x,
+        self.bounds.y,
     ).scale(ctx.world_to_screen_scale);
 
     const dimentions = rl.Vector2.init(
-        self.rect.width,
-        self.rect.height,
+        self.bounds.width,
+        self.bounds.height,
     ).scale(ctx.world_to_screen_scale);
 
     rl.drawRectangle(
@@ -44,14 +44,14 @@ pub fn draw(self: Self, ctx: *const Context) void {
         .dark_green,
     );
 
-    for (self.drop_slots.items) |drop_slot| {
+    for (self.drop_zones.items) |drop_slot| {
         drop_slot.draw();
     }
 }
 
 pub fn addDropZone(self: *Self, position: rl.Vector2) !void {
-    try self.drop_slots.append(
-        self._drop_slots_alloc.allocator(),
+    try self.drop_zones.append(
+        self._drop_zones_alloc.allocator(),
         .init(
             .init(
                 position.x,

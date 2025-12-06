@@ -1,10 +1,11 @@
+const std = @import("std");
 const rl = @import("raylib");
 
 const Card = @import("Card.zig");
 
 const Self = @This();
 
-content: ?*const Card = null,
+content: ?* Card = null,
 rect: rl.Rectangle,
 
 pub fn init(rect: rl.Rectangle) Self {
@@ -13,7 +14,7 @@ pub fn init(rect: rl.Rectangle) Self {
 
 const PADDING = 5;
 pub fn draw(self: Self) void {
-    rl.drawRectangleRoundedLines(
+    rl.drawRectangleRoundedLinesEx(
         .init(
             self.rect.x - PADDING,
             self.rect.y - PADDING,
@@ -22,6 +23,19 @@ pub fn draw(self: Self) void {
         ),
         Card.CARD_CORNER_ROUNDEDNESS,
         0,
+        2,
         .white,
     );
+}
+
+pub fn isPullingCard(self: Self, card: Card) bool {
+    if (self.content != null) {
+        return false;
+    }
+
+    if (rl.checkCollisionPointRec(card.position, self.rect)) {
+        return true;
+    }
+
+    return false;
 }
