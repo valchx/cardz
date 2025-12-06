@@ -16,7 +16,6 @@ base_rotation: f32 = 0,
 rotation: f32 = 0,
 sway_rotation: f32 = 0,
 sway_target: f32 = 0,
-is_dragging: bool = false,
 
 pub fn init(id: Id) !Self {
     const height = DEFAULT_CARD_HEIGHT;
@@ -109,12 +108,12 @@ fn update_texture(self: *Self) !void {
     }
 }
 
-pub fn draw(self: Self) void {
+pub fn draw(self: Self, is_dragging: bool) void {
     if (self.render_texture) |tex| {
         var pos = self.position;
         var size = self.size;
 
-        if (self.is_dragging) {
+        if (is_dragging) {
             // TODO : Use existing or new texture to get rotation.
             const shadow_pos = pos.add(.init(10, 10));
 
@@ -191,12 +190,11 @@ fn lerp(a: f32, b: f32, t: f32) f32 {
     return a + (b - a) * t;
 }
 
-pub fn update(self: *Self) void {
-    const mouse_pos = rl.getMousePosition();
+pub fn update(self: *Self, is_dragging: bool) void {
     const mouse_delta = rl.getMouseDelta();
     const delta_time = rl.getFrameTime();
 
-    if (self.is_dragging) {
+    if (is_dragging) {
         self.position = self.position.add(mouse_delta);
 
         const velocity = mouse_delta.x * 12.0;
@@ -220,6 +218,10 @@ pub fn update(self: *Self) void {
         );
     }
     self.rotation = self.base_rotation + self.sway_rotation;
+}
+
+pub fn is_dragging_start(self: Self) bool {
+    const mouse_pos = rl.getMousePosition();
 
     const two_triangles = self.get_two_triangles();
     const triangle_1 = two_triangles.triangle_1;
@@ -241,13 +243,12 @@ pub fn update(self: *Self) void {
     const mouse_over_card = triangle_1_col or triangle_2_col;
 
     if (rl.isMouseButtonPressed(.left) and mouse_over_card) {
-        self.is_dragging = true;
+        return true;
     }
 
-    if (rl.isMouseButtonReleased(.left)) {
-        self.is_dragging = false;
-    }
+    return false;
 }
+
 
 fn get_two_triangles(self: Self) struct { triangle_1: [3]rl.Vector2, triangle_2: [3]rl.Vector2 } {
     // 1. Move corners TO ORIGIN (subtract center)

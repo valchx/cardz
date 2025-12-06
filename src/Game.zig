@@ -90,7 +90,7 @@ pub fn draw(self: Self, ctx: *const Context) void {
     self.dealer_hand.draw();
 }
 
-pub fn update(self: Self) void {
+pub fn update(self: *Self) void {
     self.player_hand.update();
     self.dealer_hand.update();
 }

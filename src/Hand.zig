@@ -1,9 +1,11 @@
 const std = @import("std");
+const rl = @import("raylib");
 
 const Card = @import("./Card.zig");
 
 const Self = @This();
 
+card_being_dragged: ?*Card = null,
 cards: std.ArrayList(Card),
 _alloc: std.heap.ArenaAllocator,
 
@@ -29,13 +31,21 @@ pub fn add_card(self: *Self, card: Card) !void {
 }
 
 pub fn draw(self: Self) void {
-    for (self.cards.items) |item| {
-        item.draw();
+    for (self.cards.items) |*card| {
+        card.draw(self.card_being_dragged == card);
     }
 }
 
-pub fn update(self: Self) void {
-    for (self.cards.items) |*item| {
-        item.update();
+pub fn update(self: *Self) void {
+    for (self.cards.items) |*card| {
+        card.update(self.card_being_dragged == card);
+
+        if (self.card_being_dragged == null and card.is_dragging_start()) {
+            self.card_being_dragged = card;
+        }
+    }
+
+    if (rl.isMouseButtonReleased(.left)) {
+        self.card_being_dragged = null;
     }
 }
