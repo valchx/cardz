@@ -112,22 +112,28 @@ fn update_texture(self: *Self) !void {
 pub fn draw(self: Self) void {
     if (self.render_texture) |tex| {
         var pos = self.position;
+        var size = self.size;
 
         if (self.is_dragging) {
             // TODO : Use existing or new texture to get rotation.
+            const shadow_pos = pos.add(.init(10, 10));
+
+            // Shadow
             rl.drawRectangleRounded(
                 .init(
-                    pos.x - self.size.x / 2,
-                    pos.y - self.size.y / 2,
-                    self.size.x,
-                    self.size.y,
+                    shadow_pos.x - size.x / 2,
+                    shadow_pos.y - size.y / 2,
+                    size.x,
+                    size.y,
                 ),
                 CARD_CORNER_ROUNDEDNESS,
                 0,
                 .init(0, 0, 0, 50),
             );
 
-            pos = pos.subtract(.init(10, 10));
+            // Floating card
+            pos = pos.subtract(.init(5, 5));
+            size = size.scale(1.1);
         }
 
         rl.drawTexturePro(
@@ -141,10 +147,10 @@ pub fn draw(self: Self) void {
             .init(
                 pos.x,
                 pos.y,
-                self.size.x,
-                self.size.y,
+                size.x,
+                size.y,
             ),
-            self.size.divide(.init(2, 2)),
+            size.divide(.init(2, 2)),
             self.rotation,
             .white,
         );
