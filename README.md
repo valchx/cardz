@@ -1,10 +1,11 @@
-# BlackJack
+# Cardz
 
 ![Preview](./docs/02.gif) 
 
-Create a game of black jack in zig using raylib.
+Create a 2d card game engine in zig using raylib.
 
 - [X] Move cards
-- [ ] Generate deck
-- [ ] Write game logic
-- [ ] Add something extra ?
+- [X] Generate deck
+- [X] Drop zone
+- [ ] Decouple world size from screen size
+- [ ] ...

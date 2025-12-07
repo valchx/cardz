@@ -9,8 +9,11 @@ const Card = @import("Card.zig");
 pub fn main() anyerror!void {
     const screen_size = rl.Vector2.init(800, 450);
 
-    rl.initWindow(@intFromFloat(screen_size.x), @intFromFloat(screen_size.y), "BlackJack");
+    rl.setConfigFlags(.{ .window_resizable = true });
+
+    rl.initWindow(@intFromFloat(screen_size.x), @intFromFloat(screen_size.y), "Cardz");
     defer rl.closeWindow();
+
 
     rl.setTargetFPS(1000);
 

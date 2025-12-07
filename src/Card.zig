@@ -342,15 +342,6 @@ pub const Rank = enum {
         };
     }
 
-    pub fn blackJackValue(self: Rank) []const i32 {
-        return switch (self) {
-            Rank.n2...Rank.n9 => .{self + 2},
-            Rank.n10...Rank.king => .{10},
-            // TODO : handle soft hands. Maybe return two options.
-            Rank.ace => .{ 1, 11 },
-        };
-    }
-
     const symbol_index = blk: {
         // TODO : Can get 13 from enum size ?
         var strings: [13][]const u8 = undefined;
