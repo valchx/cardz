@@ -16,6 +16,7 @@ base_rotation: f32 = 0,
 rotation: f32 = 0,
 sway_rotation: f32 = 0,
 sway_target: f32 = 0,
+shown: bool = false,
 
 pub fn init(id: Id) !Self {
     const height = DEFAULT_CARD_HEIGHT;
@@ -42,14 +43,17 @@ pub fn deinit(self: Self) void {
     }
 }
 
-const TEXTURE_HEIGHT: i32 = 200;
+pub const TEXTURE_HEIGHT: i32 = 200;
 pub const CARD_CORNER_ROUNDEDNESS = 0.2;
 
 fn update_texture(self: *Self) !void {
     if (self.render_texture) |render_texture| {
         rl.unloadRenderTexture(render_texture);
     }
-    self.render_texture = try rl.loadRenderTexture(height_to_width_i32(TEXTURE_HEIGHT), TEXTURE_HEIGHT);
+    self.render_texture = try rl.loadRenderTexture(
+        height_to_width_i32(TEXTURE_HEIGHT),
+        TEXTURE_HEIGHT,
+    );
 
     if (self.render_texture) |tex| {
         const tex_width = tex.texture.width;
@@ -108,7 +112,11 @@ fn update_texture(self: *Self) !void {
     }
 }
 
-pub fn draw(self: Self, is_dragging: bool) void {
+pub fn draw(
+    self: Self,
+    is_dragging: bool,
+    back_render_texture: *const ?rl.RenderTexture,
+) void {
     if (self.render_texture) |tex| {
         var pos = self.position;
         var size = self.size;
@@ -135,8 +143,15 @@ pub fn draw(self: Self, is_dragging: bool) void {
             size = size.scale(1.1);
         }
 
+        var draw_tex: rl.Texture = undefined;
+        if (self.shown) {
+            draw_tex = tex.texture;
+        } else if (back_render_texture.*) |back| {
+            draw_tex = back.texture;
+        }
+
         rl.drawTexturePro(
-            tex.texture,
+            draw_tex,
             .init(
                 0,
                 0,
@@ -218,6 +233,10 @@ pub fn update(self: *Self, is_dragging: bool) void {
         );
     }
     self.rotation = self.base_rotation + self.sway_rotation;
+
+    if (rl.isMouseButtonPressed(.right)) {
+        self.shown = !self.shown;
+    }
 }
 
 pub fn is_dragging_start(self: Self) bool {
@@ -248,7 +267,6 @@ pub fn is_dragging_start(self: Self) bool {
 
     return false;
 }
-
 
 fn get_two_triangles(self: Self) struct { triangle_1: [3]rl.Vector2, triangle_2: [3]rl.Vector2 } {
     // 1. Move corners TO ORIGIN (subtract center)
@@ -283,7 +301,7 @@ pub fn height_to_width_f32(height: f32) f32 {
     return (height * 5) / 7;
 }
 
-fn height_to_width_i32(height: i32) i32 {
+pub fn height_to_width_i32(height: i32) i32 {
     return @divFloor(height * 5, 7);
 }
 

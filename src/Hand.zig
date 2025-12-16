@@ -31,9 +31,13 @@ pub fn add_card(self: *Self, card: Card) !void {
     try self.cards.append(self._alloc.allocator(), card);
 }
 
-pub fn draw(self: Self) void {
+pub fn draw(
+    self: Self,
+    back_render_texture: *const ?rl.RenderTexture,
+) void {
     for (self.cards.items) |*card| {
-        card.draw(self.card_being_dragged == card);
+        const is_being_dragged = self.card_being_dragged == card;
+        card.draw(is_being_dragged, back_render_texture);
     }
 }
 

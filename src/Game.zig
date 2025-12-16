@@ -54,8 +54,8 @@ pub fn deinit(self: *Self) void {
 pub fn draw(self: Self, ctx: *const Context) void {
     self.board.draw(ctx);
 
-    self.player_hand.draw();
-    self.dealer_hand.draw();
+    self.player_hand.draw(&self.deck.back_render_texture);
+    self.dealer_hand.draw(&self.deck.back_render_texture);
 }
 
 pub fn update(self: *Self) void {
