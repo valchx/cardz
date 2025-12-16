@@ -9,27 +9,23 @@ const Card = @import("Card.zig");
 pub fn main() anyerror!void {
     const screen_size = rl.Vector2.init(800, 450);
 
-    rl.setConfigFlags(.{ .window_resizable = true });
+    rl.setConfigFlags(.{ .window_resizable = true, });
 
     rl.initWindow(@intFromFloat(screen_size.x), @intFromFloat(screen_size.y), "Cardz");
     defer rl.closeWindow();
 
-
-    rl.setTargetFPS(1000);
-
-    var game = try Game.init();
-
-    const card = game.deck.items[0];
-    // card.debug = true;
-    try game.player_hand.add_card(card);
+    rl.setTargetFPS(120);
 
     var ctx: Context = .{
         .world_to_screen_scale = 1,
-        .screen_size = .init(
-            0,
-            0,
-        ),
+        .screen_size = screen_size.addValue(0),
     };
+
+    var game = try Game.init(&ctx);
+
+    const card = game.deck.cards.items[0];
+    // card.debug = true;
+    try game.player_hand.add_card(card);
 
     while (!rl.windowShouldClose()) {
         ctx.screen_size = .init(

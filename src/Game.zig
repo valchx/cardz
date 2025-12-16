@@ -5,23 +5,16 @@ const Context = @import("Context.zig");
 const Hand = @import("Hand.zig");
 const Card = @import("Card.zig");
 const Board = @import("Board.zig");
+const Deck = @import("Deck.zig");
 
 const Self = @This();
 
 board: Board,
 player_hand: Hand,
 dealer_hand: Hand,
-deck: std.ArrayList(Card),
-_deck_alloc: std.heap.ArenaAllocator,
+deck: Deck,
 
-pub fn init() !Self {
-    var deck_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-
-    const deck = try std.ArrayList(Card).initCapacity(
-        deck_arena.allocator(),
-        0,
-    );
-
+pub fn init(ctx: *const Context) !Self {
     var self = Self{
         .board = try .init(
             rl.Vector2.init(
@@ -31,45 +24,20 @@ pub fn init() !Self {
         ),
         .player_hand = try Hand.init(),
         .dealer_hand = try Hand.init(),
-        .deck = deck,
-        ._deck_alloc = deck_arena,
+        .deck = try .init(),
     };
 
     try self.reset();
 
-    try self.board.addDropZone(.init(200, 200));
+
+    try self.board.addDropZone(.init(( ctx.screen_size.x / 2 ) - 100, 200));
+    try self.board.addDropZone(.init(( ctx.screen_size.x / 2 ) + 100, 200));
 
     return self;
 }
 
 fn reset(self: *Self) !void {
-    for (self.deck.items) |*card| {
-        card.deinit();
-    }
-
-    _ = self._deck_alloc.reset(.free_all);
-
-    self.deck = try .initCapacity(self._deck_alloc.allocator(), 0);
-
-    inline for (std.meta.fields(Card.Rank)) |rank_field| {
-        inline for (std.meta.fields(Card.Suite)) |suite_field| {
-            try self.deck.append(
-                self._deck_alloc.allocator(),
-                try Card.init(
-                    .{
-                        .rank = @enumFromInt(rank_field.value),
-                        .suite = @enumFromInt(suite_field.value),
-                    },
-                ),
-            );
-        }
-    }
-
-    const seed = std.time.milliTimestamp();
-    var prng = std.Random.DefaultPrng.init(@intCast(seed));
-    const random = prng.random();
-
-    std.Random.shuffle(random, Card, self.deck.items);
+    try self.deck.reset();
 }
 
 pub fn deinit(self: *Self) void {
